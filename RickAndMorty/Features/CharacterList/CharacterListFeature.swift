@@ -60,7 +60,7 @@ struct CharacterListFeature {
                 state.isShowingInstructions = false
                 return .run { send in
                     do {
-                        let url = try await URLBuilder().allCharacters()
+                        let url = try URLBuilder().allCharacters()
                         let (data, _) = try await URLSession.shared.data(from: url)
                         let response = try JSONDecoder().decode(PaginatedResponse<Character>.self, from: data)
                         await send(.charactersLoaded(.success(response.results)))
@@ -82,6 +82,10 @@ struct CharacterListFeature {
                 state.destination = .details(CharacterDetailsFeature.State(character: character))
                 return .none
                 
+            case .destination(.dismiss):
+                state.destination = nil
+                return .none
+                
             case .destination:
                 return .none
             }
@@ -91,17 +95,3 @@ struct CharacterListFeature {
         }
     }
 }
-
-/*
- CharactersListView odpowiada za wczytywanie i prezentowanie listy bohaterów
- serialu „Rick and Morty”. Na samym początku widok powinien prezentować stan
- początkowy składający się z instrukcji tekstowej mówiącej użytkownikowi co trzeba
- zrobić, żeby wczytać listę bohaterów, oraz przycisku służącego do wczytania tej listy.
- Przykładowy tekst instrukcji została zamieszczony na końcu tego dokumentu, istnieje
- możliwość użycia dowolnego innego w celu lepszej estetyki aplikacji.
- CharactersListView niezależnie od wyświetlanej wartości powinien posiadać widoczny przycisk powodujący
- powrót do stanu początkowego widoku (schowanie listy, wyświetlenie instrukcji wraz z
- przyciskiem do wczytania bohaterów).
- Po naciśnięciu na dowolny element listy zawartej w CharactersListView,
- powinniśmy zostać przekierowani do CharacterDetailsView.
- */

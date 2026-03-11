@@ -18,9 +18,12 @@ struct CharacterListView: View {
                     if store.isLoading {
                         ProgressView()
                     } else if store.isShowingInstructions {
-                        initialStateView
+                        InitialStateView(onDownload: { store.send(.loadCharacters) })
                     } else {
-                        characterList
+                        CharacterList(
+                            characters: store.characters,
+                            onSelect: { store.send(.selectCharacter($0)) }
+                        )
                     }
                 }
                 .navigationTitle("Characters")
@@ -31,37 +34,48 @@ struct CharacterListView: View {
                         }
                     }
                 }
-                .background(
-                    WithPerceptionTracking {
-                        if let detailsStore = store.scope(state: \.destination?.details, action: \.destination.details) {
-                            NavigationLink(
-                                destination: CharacterDetailsView(store: detailsStore),
-                                isActive: Binding(
-                                    get: { true },
-                                    set: { active in
-                                        if !active { store.send(.destination(.dismiss)) }
-                                    }
-                                )
-                            ) {
-                                EmptyView()
-                            }
-                        }
-                    }
-                )
+                .background(navigationLink)
             }
         }
     }
     
-    private var initialStateView: some View {
+    @ViewBuilder
+    private var navigationLink: some View {
+        WithPerceptionTracking {
+            NavigationLink(
+                destination: WithPerceptionTracking {
+                    if let detailsStore = store.scope(state: \.destination?.details, action: \.destination.details) {
+                        CharacterDetailsView(store: detailsStore)
+                    }
+                },
+                isActive: Binding(
+                    get: { store.destination != nil },
+                    set: { active in
+                        if !active && store.destination != nil {
+                            store.send(.destination(.dismiss))
+                        }
+                    }
+                )
+            ) {
+                EmptyView()
+            }
+        }
+    }
+}
+
+// MARK: - Subviews
+
+private struct InitialStateView: View {
+    let onDownload: () -> Void
+    
+    var body: some View {
         VStack(spacing: 20) {
             Text("Press button to load the character list")
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
                 .foregroundColor(.secondary)
             
-            Button(action: {
-                store.send(.loadCharacters)
-            }) {
+            Button(action: onDownload) {
                 Text("Download characters")
                     .fontWeight(.semibold)
                     .frame(maxWidth: .infinity)
@@ -73,38 +87,53 @@ struct CharacterListView: View {
             .padding(.horizontal, 40)
         }
     }
+}
+
+private struct CharacterList: View {
+    let characters: [Character]
+    let onSelect: (Character) -> Void
     
-    private var characterList: some View {
+    var body: some View {
         List {
-            ForEach(store.characters, id: \.id) { character in
-                HStack(spacing: 16) {
-                    AsyncImage(url: URL(string: character.image)) { image in
-                        image.resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 60, height: 60)
-                            .clipShape(Circle())
-                    } placeholder: {
-                        Circle()
-                            .fill(Color.gray.opacity(0.2))
-                            .frame(width: 60, height: 60)
+            ForEach(characters, id: \.id) { character in
+                CharacterRow(character: character)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        onSelect(character)
                     }
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(character.name)
-                            .font(.headline)
-                        Text(character.status)
-                            .font(.subheadline)
-                            .foregroundColor(character.status == "Alive" ? .green : (character.status == "Dead" ? .red : .secondary))
-                    }
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    store.send(.selectCharacter(character))
-                }
             }
         }
     }
 }
+
+private struct CharacterRow: View {
+    let character: Character
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            AsyncImage(url: URL(string: character.image)) { image in
+                image.resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: 60, height: 60)
+                    .clipShape(Circle())
+            } placeholder: {
+                Circle()
+                    .fill(Color.gray.opacity(0.2))
+                    .frame(width: 60, height: 60)
+            }
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(character.name)
+                    .font(.headline)
+                Text(character.status)
+                    .font(.subheadline)
+                    .foregroundColor(character.status == "Alive" ? .green : (character.status == "Dead" ? .red : .secondary))
+            }
+        }
+    }
+}
+
+// MARK: - Preview
 
 #Preview {
     CharacterListView(
