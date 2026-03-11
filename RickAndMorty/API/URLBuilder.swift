@@ -17,8 +17,8 @@ struct URLBuilder {
     }
     
     enum EndpointPath: String {
-        case character = "/character/%@"
-        case episode = "/episode/%@"
+        case character = "/character"
+        case episode = "/episode"
     }
     
     let base: String
@@ -27,11 +27,14 @@ struct URLBuilder {
         self.base = base.rawValue
     }
     
-    private func build(_ endpointPath: EndpointPath, _ args: CVarArg...) throws -> URL {
-        let path = String(format: endpointPath.rawValue, arguments: args)
-        let normalizedBase = base.hasSuffix("/") ? String(base.dropLast()) : base
+    private func build(_ endpointPath: EndpointPath, _ suffix: String? = nil) throws -> URL {
+        let path = String(format: base
+                          + (suffix != nil ? "/" : "")
+                          + endpointPath.rawValue
+                          + (suffix ?? "")
+        )
         
-        guard let url = URL(string: normalizedBase + path) else {
+        guard let url = URL(string: path) else {
             throw URLBuilderError.invalidURL
         }
         return url
@@ -43,7 +46,7 @@ struct URLBuilder {
     }
     
     func characters(page: Int) throws -> URL {
-        try build(.character, "?page=\(page)")
+        try build(.character, "/?page=\(page)")
     }
     
     func character(id: Int) throws -> URL {
@@ -56,7 +59,7 @@ struct URLBuilder {
     }
     
     func episodes(page: Int) throws -> URL {
-        try build(.episode, "?page=\(page)")
+        try build(.episode, "/?page=\(page)")
     }
     
     func episode(id: Int) throws -> URL {

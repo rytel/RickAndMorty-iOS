@@ -12,20 +12,23 @@ struct CharacterListView: View {
     var store: StoreOf<CharacterListFeature>
     
     var body: some View {
-        NavigationView {
-            VStack {
-                if store.isLoading {
-                    ProgressView()
-                } else if store.isShowingInstructions {
-                    initialStateView
-                } else {
-                    characterList
+        WithPerceptionTracking {
+            NavigationView {
+                VStack {
+                    if store.isLoading {
+                        ProgressView()
+                    } else if store.isShowingInstructions {
+                        initialStateView
+                    } else {
+                        characterList
+                    }
                 }
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Reset") {
-                        store.send(.cleanList)
+                .navigationTitle("Character list")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Reset") {
+                            store.send(.cleanList)
+                        }
                     }
                 }
             }
@@ -33,31 +36,35 @@ struct CharacterListView: View {
     }
     
     private var initialStateView: some View {
-        VStack(spacing: 20) {
-            Text("Press button to load the character list")
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-                .foregroundColor(.secondary)
-            
-            Button(action: {
-                store.send(.loadCharacters)
-            }) {
-                Text("Download characters")
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+        WithPerceptionTracking {
+            VStack(spacing: 20) {
+                Text("Press button to load the character list")
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                    .foregroundColor(.secondary)
+                
+                Button(action: {
+                    store.send(.loadCharacters)
+                }) {
+                    Text("Download characters")
+                        .fontWeight(.semibold)
+                        .frame(maxWidth: .infinity)
+                        .padding()
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+                .padding(.horizontal, 40)
             }
-            .padding(.horizontal, 40)
         }
     }
     
     private var characterList: some View {
-        List {
-            ForEach(store.characters, id: \.id) { character in
-                Text(character.name)
+        WithPerceptionTracking {
+            List {
+                ForEach(store.characters, id: \.id) { character in
+                    Text(character.name)
+                }
             }
         }
     }
