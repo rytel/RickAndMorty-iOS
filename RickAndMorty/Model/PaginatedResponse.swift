@@ -7,8 +7,8 @@
 
 import Foundation
 
-struct PaginatedResponse<T: Decodable>: Decodable {
-    struct Info: Decodable {
+struct PaginatedResponse<T: Codable>: Codable {
+    struct Info: Codable {
         let count: Int
         let pages: Int
         let next: URL?

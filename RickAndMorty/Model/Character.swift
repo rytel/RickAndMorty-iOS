@@ -5,7 +5,7 @@
 //  Created by Rafal Rytel on 11/03/2026.
 //
 
-struct Character: Decodable {
+struct Character: Codable {
     let id: Int
     let name: String
     let status: String
