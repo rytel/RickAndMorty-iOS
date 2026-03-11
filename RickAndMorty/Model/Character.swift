@@ -5,7 +5,7 @@
 //  Created by Rafal Rytel on 11/03/2026.
 //
 
-struct Character: Codable {
+struct Character: Codable, Equatable {
     let id: Int
     let name: String
     let status: String
@@ -16,12 +16,12 @@ struct Character: Codable {
     let episode: [String]
 }
 
-struct Origin: Codable {
+struct Origin: Codable, Equatable {
     let name: String
     let url: String
 }
 
-struct Location: Codable {
+struct Location: Codable, Equatable {
     let name: String
     let url: String
 }

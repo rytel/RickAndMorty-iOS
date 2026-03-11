@@ -12,9 +12,9 @@ import ComposableArchitecture
 struct RickAndMortyApp: App {
     var body: some Scene {
         WindowGroup {
-            RootView(
-                store: Store(initialState: RootFeature.State()) {
-                    RootFeature()
+            CharacterListView(
+                store: Store(initialState: CharacterListFeature.State()) {
+                    CharacterListFeature()
                 }
             )
         }

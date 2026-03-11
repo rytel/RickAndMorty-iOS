@@ -14,7 +14,9 @@ struct CharacterListView: View {
     var body: some View {
         NavigationView {
             VStack {
-                if store.isShowingInstructions {
+                if store.isLoading {
+                    ProgressView()
+                } else if store.isShowingInstructions {
                     initialStateView
                 } else {
                     characterList
@@ -54,8 +56,8 @@ struct CharacterListView: View {
     
     private var characterList: some View {
         List {
-            ForEach(0..<5) { i in
-                Text("Rick \(i + 1)")
+            ForEach(store.characters, id: \.id) { character in
+                Text(character.name)
             }
         }
     }

@@ -6,12 +6,15 @@
 //
 
 import ComposableArchitecture
+import Foundation
 
 @Reducer
 struct CharacterListFeature {
     @ObservableState
     struct State: Equatable {
         var isShowingInstructions: Bool = true
+        var characters: [Character] = []
+        var isLoading: Bool = false
     }
     
     enum Action {
@@ -26,13 +29,38 @@ struct CharacterListFeature {
         Reduce { state, action in
             switch action {
             case .hideTip:
+                state.isShowingInstructions = false
                 return .none
+                
             case .cleanList:
+                state.isShowingInstructions = true
+                state.characters = []
                 return .none
+                
             case .loadCharacters:
+                state.isLoading = true
+                state.isShowingInstructions = false
+                return .run { send in
+                    do {
+                        let url = try await URLBuilder().allCharacters()
+                        let (data, _) = try await URLSession.shared.data(from: url)
+                        let response = try JSONDecoder().decode(PaginatedResponse<Character>.self, from: data)
+                        await send(.charactersLoaded(.success(response.results)))
+                    } catch {
+                        await send(.charactersLoaded(.failure(error)))
+                    }
+                }
+                
+            case let .charactersLoaded(.success(characters)):
+                state.isLoading = false
+                state.characters = characters
                 return .none
-            case let .charactersLoaded(result):
+                
+            case let .charactersLoaded(.failure(error)):
+                state.isLoading = false
+                //handle error
                 return .none
+                
             case let .selectCharacter(character):
                 return .none
             }
