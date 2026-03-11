@@ -11,28 +11,6 @@ import ComposableArchitecture
 struct EpisodeDetailsFeature {
     @ObservableState
     struct State: Equatable {
-        
-    }
-    
-    enum Action {
-        
-    }
-    
-    var body: some Reducer<State, Action> {
-        Reduce { state, action in
-            switch action {
-                
-            }
-        }
+        let episode: Episode
     }
 }
-
-
-/*
- EpisodeDetailsView wyświetlającego takie pola jak:
- ⁃ Name
- ⁃ air_date
- ⁃ Episode
- 
- Dodatkowo powinien on wyświetlać liczbę bohaterów występujących w danym odcinku.
- */

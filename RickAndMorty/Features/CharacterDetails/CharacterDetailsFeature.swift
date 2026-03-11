@@ -15,30 +15,58 @@ struct CharacterDetailsFeature {
         let character: Character
         var episodes: [Episode] = []
         var isLoading: Bool = false
+        @Presents var destination: Destination.State?
     }
     
     enum Action {
         case onAppear
         case episodesLoaded(Result<[Episode], Error>)
         case selectEpisode(Episode)
+        case destination(PresentationAction<Destination.Action>)
+    }
+    
+    @Reducer
+    struct Destination {
+        @ObservableState
+        enum State: Equatable {
+            case episodeDetails(EpisodeDetailsFeature.State)
+        }
+        enum Action {
+            case episodeDetails(EpisodeDetailsFeature.Action)
+        }
+        var body: some Reducer<State, Action> {
+            Scope(state: \.episodeDetails, action: \.episodeDetails) {
+                EpisodeDetailsFeature()
+            }
+        }
     }
     
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
             case .onAppear:
+                guard state.episodes.isEmpty && !state.isLoading else { return .none }
                 state.isLoading = true
                 let episodeURLs = state.character.episode
+                
                 return .run { send in
                     do {
-                        var episodes: [Episode] = []
-                        for urlString in episodeURLs {
-                            guard let url = URL(string: urlString) else { continue }
-                            let (data, _) = try await URLSession.shared.data(from: url)
-                            let episode = try JSONDecoder().decode(Episode.self, from: data)
-                            episodes.append(episode)
+                        var loadedEpisodes: [Episode] = []
+                        try await withThrowingTaskGroup(of: Episode.self) { group in
+                            for urlString in episodeURLs {
+                                if let url = URL(string: urlString) {
+                                    group.addTask {
+                                        let (data, _) = try await URLSession.shared.data(from: url)
+                                        return try JSONDecoder().decode(Episode.self, from: data)
+                                    }
+                                }
+                            }
+                            for try await episode in group {
+                                loadedEpisodes.append(episode)
+                            }
                         }
-                        await send(.episodesLoaded(.success(episodes)))
+                        loadedEpisodes.sort { $0.id < $1.id }
+                        await send(.episodesLoaded(.success(loadedEpisodes)))
                     } catch {
                         await send(.episodesLoaded(.failure(error)))
                     }
@@ -49,14 +77,20 @@ struct CharacterDetailsFeature {
                 state.episodes = episodes
                 return .none
                 
-            case let .episodesLoaded(.failure(error)):
+            case .episodesLoaded(.failure):
                 state.isLoading = false
-                // handle error
                 return .none
                 
-            case .selectEpisode:
+            case let .selectEpisode(episode):
+                state.destination = .episodeDetails(EpisodeDetailsFeature.State(episode: episode))
+                return .none
+                
+            case .destination:
                 return .none
             }
+        }
+        .ifLet(\.$destination, action: \.destination) {
+            Destination()
         }
     }
 }

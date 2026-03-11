@@ -9,46 +9,67 @@ import SwiftUI
 import ComposableArchitecture
 
 struct CharacterDetailsView: View {
-    let store: StoreOf<CharacterDetailsFeature>
+    @Perception.Bindable var store: StoreOf<CharacterDetailsFeature>
     
     var body: some View {
         WithPerceptionTracking {
             ScrollView {
-                VStack(spacing: 20) {
-                    CharacterHeaderView(imageUrl: store.character.image)
+                VStack(alignment: .leading, spacing: 20) {
+                    CharacterHeaderView(character: store.character)
                     CharacterInfoSection(character: store.character)
-                    EpisodesSection(
-                        isLoading: store.isLoading,
-                        episodes: store.episodes,
-                        onSelect: { store.send(.selectEpisode($0)) }
-                    )
+                    
+                    if store.isLoading {
+                        ProgressView("Loading episodes...")
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                    } else if !store.episodes.isEmpty {
+                        EpisodesSection(
+                            episodes: store.episodes,
+                            onSelect: { store.send(.selectEpisode($0)) }
+                        )
+                    }
                 }
+                .padding()
             }
             .navigationTitle(store.character.name)
+            .navigationBarTitleDisplayMode(.inline)
             .onAppear {
                 store.send(.onAppear)
+            }
+            .sheet(
+                item: $store.scope(state: \.destination?.episodeDetails, action: \.destination.episodeDetails)
+            ) { episodeStore in
+                NavigationView {
+                    EpisodeDetailsView(store: episodeStore)
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                Button("Done") {
+                                    store.send(.destination(.dismiss))
+                                }
+                            }
+                        }
+                }
             }
         }
     }
 }
 
 // MARK: - Subviews
+
 private struct CharacterHeaderView: View {
-    let imageUrl: String
+    let character: Character
     
     var body: some View {
-        AsyncImage(url: URL(string: imageUrl)) { image in
+        AsyncImage(url: URL(string: character.image)) { image in
             image.resizable()
-                .aspectRatio(contentMode: .fill)
-                .frame(width: 200, height: 200)
+                .aspectRatio(contentMode: .fit)
                 .cornerRadius(12)
         } placeholder: {
-            Rectangle()
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: 200, height: 200)
+            Color.gray.opacity(0.1)
+                .aspectRatio(1, contentMode: .fit)
                 .cornerRadius(12)
-                .overlay(ProgressView())
         }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -57,55 +78,56 @@ private struct CharacterInfoSection: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            InfoRow(label: "Name", value: character.name)
-            InfoRow(label: "Status", value: character.status)
-            InfoRow(label: "Gender", value: character.gender)
-            InfoRow(label: "Origin", value: character.origin.name)
-            InfoRow(label: "Location", value: character.location.name)
+            Text("General Information")
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                InfoRow(label: "Status", value: character.status, valueColor: character.status == "Alive" ? .green : (character.status == "Dead" ? .red : .primary))
+                InfoRow(label: "Gender", value: character.gender)
+                InfoRow(label: "Origin", value: character.origin.name)
+                InfoRow(label: "Location", value: character.location.name)
+            }
+            .padding()
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(12)
         }
-        .padding()
-        .background(Color.gray.opacity(0.1))
-        .cornerRadius(12)
-        .padding(.horizontal)
     }
 }
 
 private struct InfoRow: View {
     let label: String
     let value: String
+    var valueColor: Color = .primary
     
     var body: some View {
         HStack {
-            Text(label + ":")
-                .fontWeight(.bold)
-            Text(value)
+            Text(label)
+                .foregroundColor(.secondary)
             Spacer()
+            Text(value)
+                .fontWeight(.medium)
+                .foregroundColor(valueColor)
         }
     }
 }
 
 private struct EpisodesSection: View {
-    let isLoading: Bool
     let episodes: [Episode]
     let onSelect: (Episode) -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Episodes")
-                .font(.headline)
-                .padding(.horizontal)
+                .font(.title2)
+                .fontWeight(.bold)
             
-            if isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .padding()
-            } else {
-                LazyVStack(spacing: 8) {
-                    ForEach(episodes, id: \.id) { episode in
-                        EpisodeRow(episode: episode, onTap: { onSelect(episode) })
+            ForEach(episodes, id: \.id) { episode in
+                EpisodeRow(episode: episode)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        onSelect(episode)
                     }
-                }
-                .padding(.horizontal)
             }
         }
     }
@@ -113,28 +135,23 @@ private struct EpisodesSection: View {
 
 private struct EpisodeRow: View {
     let episode: Episode
-    let onTap: () -> Void
     
     var body: some View {
-        Button(action: onTap) {
+        VStack(alignment: .leading) {
             HStack {
-                Text("Odcinek \(episode.id)")
+                Text("Episode \(episode.id)")
+                    .font(.headline)
                 Spacer()
-                Text(episode.name)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
             }
-            .padding()
-            .background(Color.white)
-            .cornerRadius(8)
-            .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         }
-        .buttonStyle(PlainButtonStyle())
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(10)
     }
 }
+
+// MARK: - Preview
 
 #Preview {
     CharacterDetailsView(
