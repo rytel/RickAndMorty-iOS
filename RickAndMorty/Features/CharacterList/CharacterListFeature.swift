@@ -15,6 +15,7 @@ struct CharacterListFeature {
         var isShowingInstructions: Bool = true
         var characters: [Character] = []
         var isLoading: Bool = false
+        @Presents var destination: Destination.State?
     }
     
     enum Action {
@@ -23,6 +24,23 @@ struct CharacterListFeature {
         case loadCharacters
         case charactersLoaded(Result<[Character], Error>)
         case selectCharacter(Character)
+        case destination(PresentationAction<Destination.Action>)
+    }
+    
+    @Reducer
+    struct Destination {
+        @ObservableState
+        enum State: Equatable {
+            case details(CharacterDetailsFeature.State)
+        }
+        enum Action {
+            case details(CharacterDetailsFeature.Action)
+        }
+        var body: some Reducer<State, Action> {
+            Scope(state: \.details, action: \.details) {
+                CharacterDetailsFeature()
+            }
+        }
     }
     
     var body: some Reducer<State, Action> {
@@ -58,12 +76,18 @@ struct CharacterListFeature {
                 
             case let .charactersLoaded(.failure(error)):
                 state.isLoading = false
-                //handle error
                 return .none
                 
             case let .selectCharacter(character):
+                state.destination = .details(CharacterDetailsFeature.State(character: character))
+                return .none
+                
+            case .destination:
                 return .none
             }
+        }
+        .ifLet(\.$destination, action: \.destination) {
+            Destination()
         }
     }
 }
