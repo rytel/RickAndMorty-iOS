@@ -10,7 +10,7 @@ import ComposableArchitecture
 @Reducer
 struct EpisodeDetailsFeature {
     @ObservableState
-    struct State {
+    struct State: Equatable {
         
     }
     

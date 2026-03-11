@@ -10,12 +10,13 @@ import ComposableArchitecture
 @Reducer
 struct CharacterListFeature {
     @ObservableState
-    struct State {
-        
+    struct State: Equatable {
+        var isShowingInstructions: Bool = true
     }
     
     enum Action {
         case hideTip
+        case cleanList
         case loadCharacters
         case charactersLoaded(Result<[Character], Error>)
         case selectCharacter(Character)
@@ -24,7 +25,9 @@ struct CharacterListFeature {
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
-                case .hideTip:
+            case .hideTip:
+                return .none
+            case .cleanList:
                 return .none
             case .loadCharacters:
                 return .none

@@ -9,11 +9,62 @@ import SwiftUI
 import ComposableArchitecture
 
 struct CharacterListView: View {
+    var store: StoreOf<CharacterListFeature>
+    
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        NavigationView {
+            VStack {
+                if store.isShowingInstructions {
+                    initialStateView
+                } else {
+                    characterList
+                }
+            }
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Reset") {
+                        store.send(.cleanList)
+                    }
+                }
+            }
+        }
+    }
+    
+    private var initialStateView: some View {
+        VStack(spacing: 20) {
+            Text("Press button to load the character list")
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+                .foregroundColor(.secondary)
+            
+            Button(action: {
+                store.send(.loadCharacters)
+            }) {
+                Text("Download characters")
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.blue)
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }
+            .padding(.horizontal, 40)
+        }
+    }
+    
+    private var characterList: some View {
+        List {
+            ForEach(0..<5) { i in
+                Text("Rick \(i + 1)")
+            }
+        }
     }
 }
 
 #Preview {
-    CharacterListView()
+    CharacterListView(
+        store: Store(initialState: CharacterListFeature.State()) {
+            CharacterListFeature()
+        }
+    )
 }
