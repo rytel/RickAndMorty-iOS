@@ -5,7 +5,7 @@
 //  Created by Rafal Rytel on 11/03/2026.
 //
 
-struct Episode: Codable {
+struct Episode: Codable, Equatable {
     let id: Int
     let name: String
     let air_date: String
