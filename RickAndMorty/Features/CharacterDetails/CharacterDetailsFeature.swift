@@ -13,7 +13,7 @@ struct CharacterDetailsFeature {
     @ObservableState
     struct State: Equatable {
         let character: Character
-        var episodes: [Episode] = []
+        var episodeIDs: [Int] = []
         var isLoading: Bool = false
         var errorMessage: String?
         @Presents var destination: Destination.State?
@@ -21,8 +21,8 @@ struct CharacterDetailsFeature {
     
     enum Action {
         case onAppear
-        case episodesLoaded(Result<[Episode], Error>)
-        case selectEpisode(Episode)
+        case selectEpisode(Int)
+        case episodeLoaded(Result<Episode, Error>)
         case destination(PresentationAction<Destination.Action>)
         case retry
     }
@@ -49,40 +49,43 @@ struct CharacterDetailsFeature {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                guard state.episodes.isEmpty && !state.isLoading else { return .none }
+                state.episodeIDs = state.character.episode.compactMap { urlString in
+                    URL(string: urlString)?.lastPathComponent
+                }.compactMap { Int($0) }
+                return .none
+                
+            case let .selectEpisode(id):
                 state.isLoading = true
                 state.errorMessage = nil
-                let episodeURLs = state.character.episode
+                let url = "https://rickandmortyapi.com/api/episode/\(id)"
                 
                 return .run { send in
                     do {
-                        let episodes = try await apiClient.episodes(episodeURLs)
-                        await send(.episodesLoaded(.success(episodes)))
+                        let episodes = try await apiClient.episodes([url])
+                        if let episode = episodes.first {
+                            await send(.episodeLoaded(.success(episode)))
+                        }
                     } catch {
-                        await send(.episodesLoaded(.failure(error)))
+                        await send(.episodeLoaded(.failure(error)))
                     }
                 }
                 
-            case let .episodesLoaded(.success(episodes)):
+            case let .episodeLoaded(.success(episode)):
                 state.isLoading = false
-                state.episodes = episodes
-                state.errorMessage = nil
+                state.destination = .episodeDetails(EpisodeDetailsFeature.State(episode: episode))
                 return .none
                 
-            case let .episodesLoaded(.failure(error)):
+            case let .episodeLoaded(.failure(error)):
                 state.isLoading = false
                 state.errorMessage = error.localizedDescription
-                return .none
-                
-            case let .selectEpisode(episode):
-                state.destination = .episodeDetails(EpisodeDetailsFeature.State(episode: episode))
                 return .none
                 
             case .destination:
                 return .none
 
             case .retry:
-                return .send(.onAppear)
+                state.errorMessage = nil
+                return .none
             }
         }
         .ifLet(\.$destination, action: \.destination) {

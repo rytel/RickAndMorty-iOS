@@ -34,18 +34,26 @@ struct CharacterDetailsView: View {
     
     @ViewBuilder
     private var episodesSection: some View {
-        if store.isLoading {
-            ProgressView("Loading episodes...")
-                .frame(maxWidth: .infinity)
-                .padding()
-        } else if let errorMessage = store.errorMessage {
-            ErrorSection(message: errorMessage, onRetry: { store.send(.retry) })
-        } else if !store.episodes.isEmpty {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Episodes")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                
+                if store.isLoading {
+                    Spacer()
+                    ProgressView()
+                }
+            }
             
-            EpisodesSection(
-                episodes: store.episodes,
-                onSelect: { store.send(.selectEpisode($0)) }
-            )
+            if let errorMessage = store.errorMessage {
+                ErrorSection(message: errorMessage, onRetry: { store.send(.retry) })
+            } else {
+                EpisodesSection(
+                    episodeIDs: store.episodeIDs,
+                    onSelect: { store.send(.selectEpisode($0)) }
+                )
+            }
         }
     }
     
@@ -130,20 +138,16 @@ private struct InfoRow: View {
 }
 
 private struct EpisodesSection: View {
-    let episodes: [Episode]
-    let onSelect: (Episode) -> Void
+    let episodeIDs: [Int]
+    let onSelect: (Int) -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Episodes")
-                .font(.title2)
-                .fontWeight(.bold)
-            
-            ForEach(episodes, id: \.id) { episode in
-                EpisodeRow(episode: episode)
+            ForEach(episodeIDs, id: \.self) { id in
+                EpisodeRow(id: id)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        onSelect(episode)
+                        onSelect(id)
                     }
             }
         }
@@ -151,11 +155,11 @@ private struct EpisodesSection: View {
 }
 
 private struct EpisodeRow: View {
-    let episode: Episode
+    let id: Int
     
     var body: some View {
         HStack {
-            Text("Episode \(episode.id)")
+            Text("Episode \(id)")
                 .font(.headline)
             Spacer()
         }
@@ -171,30 +175,24 @@ private struct ErrorSection: View {
     let onRetry: () -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Episodes")
-                .font(.title2)
-                .fontWeight(.bold)
+        VStack(spacing: 16) {
+            Text("Failed to load episode details")
+                .font(.headline)
             
-            VStack(spacing: 16) {
-                Text("Failed to load episodes")
-                    .font(.headline)
-                
-                Text(message)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                
-                Button(action: onRetry) {
-                    Label("Retry", systemImage: "arrow.clockwise")
-                }
-                .buttonStyle(.bordered)
+            Text(message)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+            
+            Button(action: onRetry) {
+                Label("Clear Error", systemImage: "xmark.circle")
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.red.opacity(0.05))
-            .cornerRadius(12)
+            .buttonStyle(.bordered)
         }
+        .frame(maxWidth: .infinity)
+        .padding()
+        .background(Color.red.opacity(0.05))
+        .cornerRadius(12)
     }
 }
 
