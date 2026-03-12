@@ -7,6 +7,9 @@
 
 import Foundation
 import ComposableArchitecture
+import OSLog
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "RickAndMorty", category: "Networking")
 
 extension APIClient: DependencyKey {
     static let liveValue = Self(
@@ -53,11 +56,26 @@ extension DependencyValues {
 private func request<T: Decodable>(_ url: URL) async throws -> T {
     @Dependency(\.jsonDecoder) var decoder
     @Dependency(\.rickAndMortyUrlSession) var urlSession
+    
+    logger.debug("🚀 Requesting URL: \(url.absoluteString, privacy: .public)")
+    
     let (data, response) = try await urlSession.data(from: url)
     
-    if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
-        throw URLError(.badServerResponse)
+    if let httpResponse = response as? HTTPURLResponse {
+        logger.info("✅ Received response (\(httpResponse.statusCode)) for URL: \(url.absoluteString, privacy: .public). Data size: \(data.count) bytes.")
+        
+        if !(200...299).contains(httpResponse.statusCode) {
+            logger.error("❌ Bad status code \(httpResponse.statusCode) for URL: \(url.absoluteString, privacy: .public)")
+            throw URLError(.badServerResponse)
+        }
+    } else {
+        logger.warning("❓ Received non-HTTP response for URL: \(url.absoluteString, privacy: .public)")
     }
     
-    return try decoder.decode(T.self, from: data)
+    do {
+        return try decoder.decode(T.self, from: data)
+    } catch {
+        logger.error("❌ Decoding error for URL: \(url.absoluteString, privacy: .public). Error: \(error.localizedDescription)")
+        throw error
+    }
 }

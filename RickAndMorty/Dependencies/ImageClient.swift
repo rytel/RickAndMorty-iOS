@@ -7,6 +7,9 @@
 
 import UIKit
 import ComposableArchitecture
+import OSLog
+
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "RickAndMorty", category: "Images")
 
 struct ImageClient {
     var image: (URL) async throws -> UIImage
@@ -16,13 +19,20 @@ extension ImageClient: DependencyKey {
     static let liveValue = Self(
         image: { url in
             if let cached = ImageCache.shared.get(for: url) {
+                logger.debug("🖼️ Using cached image for URL: \(url.absoluteString, privacy: .public)")
                 return cached
             }
             
+            logger.debug("🚀 Requesting image URL: \(url.absoluteString, privacy: .public)")
             @Dependency(\.rickAndMortyUrlSession) var urlSession
-            let (data, _) = try await urlSession.data(from: url)
+            let (data, response) = try await urlSession.data(from: url)
+            
+            if let httpResponse = response as? HTTPURLResponse {
+                logger.info("✅ Received image (\(httpResponse.statusCode)) for URL: \(url.absoluteString, privacy: .public). Data size: \(data.count) bytes.")
+            }
             
             guard let image = UIImage(data: data) else {
+                logger.error("❌ Could not decode image data for URL: \(url.absoluteString, privacy: .public)")
                 throw URLError(.cannotDecodeContentData)
             }
             
