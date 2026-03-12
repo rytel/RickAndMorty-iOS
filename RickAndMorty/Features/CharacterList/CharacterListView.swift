@@ -17,6 +17,8 @@ struct CharacterListView: View {
                 VStack {
                     if store.isLoading {
                         ProgressView()
+                    } else if let errorMessage = store.errorMessage {
+                        ErrorView(message: errorMessage, onRetry: { store.send(.retry) })
                     } else if store.isShowingInstructions {
                         InitialStateView(onDownload: { store.send(.loadCharacters) })
                     } else {
@@ -58,76 +60,6 @@ struct CharacterListView: View {
                 )
             ) {
                 EmptyView()
-            }
-        }
-    }
-}
-
-// MARK: - Subviews
-
-private struct InitialStateView: View {
-    let onDownload: () -> Void
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("Press button to load the character list")
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-                .foregroundColor(.secondary)
-            
-            Button(action: onDownload) {
-                Text("Download characters")
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
-            }
-            .padding(.horizontal, 40)
-        }
-    }
-}
-
-private struct CharacterList: View {
-    let characters: [Character]
-    let onSelect: (Character) -> Void
-    
-    var body: some View {
-        List {
-            ForEach(characters, id: \.id) { character in
-                CharacterRow(character: character)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        onSelect(character)
-                    }
-            }
-        }
-    }
-}
-
-private struct CharacterRow: View {
-    let character: Character
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            AsyncImage(url: URL(string: character.image)) { image in
-                image.resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .frame(width: 60, height: 60)
-                    .clipShape(Circle())
-            } placeholder: {
-                Circle()
-                    .fill(Color.gray.opacity(0.2))
-                    .frame(width: 60, height: 60)
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(character.name)
-                    .font(.headline)
-                Text(character.status)
-                    .font(.subheadline)
-                    .foregroundColor(character.status == "Alive" ? .green : (character.status == "Dead" ? .red : .secondary))
             }
         }
     }

@@ -38,6 +38,8 @@ struct CharacterDetailsView: View {
             ProgressView("Loading episodes...")
                 .frame(maxWidth: .infinity)
                 .padding()
+        } else if let errorMessage = store.errorMessage {
+            ErrorSection(message: errorMessage, onRetry: { store.send(.retry) })
         } else if !store.episodes.isEmpty {
             EpisodesSection(
                 episodes: store.episodes,
@@ -160,6 +162,38 @@ private struct EpisodeRow: View {
         .padding()
         .background(Color.gray.opacity(0.1))
         .cornerRadius(10)
+    }
+}
+
+private struct ErrorSection: View {
+    let message: String
+    let onRetry: () -> Void
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Episodes")
+                .font(.title2)
+                .fontWeight(.bold)
+            
+            VStack(spacing: 16) {
+                Text("Failed to load episodes")
+                    .font(.headline)
+                
+                Text(message)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                
+                Button(action: onRetry) {
+                    Label("Retry", systemImage: "arrow.clockwise")
+                }
+                .buttonStyle(.bordered)
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.red.opacity(0.05))
+            .cornerRadius(12)
+        }
     }
 }
 

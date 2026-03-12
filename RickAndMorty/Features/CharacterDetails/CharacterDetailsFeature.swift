@@ -15,6 +15,7 @@ struct CharacterDetailsFeature {
         let character: Character
         var episodes: [Episode] = []
         var isLoading: Bool = false
+        var errorMessage: String?
         @Presents var destination: Destination.State?
     }
     
@@ -23,6 +24,7 @@ struct CharacterDetailsFeature {
         case episodesLoaded(Result<[Episode], Error>)
         case selectEpisode(Episode)
         case destination(PresentationAction<Destination.Action>)
+        case retry
     }
     
     @Reducer
@@ -49,6 +51,7 @@ struct CharacterDetailsFeature {
             case .onAppear:
                 guard state.episodes.isEmpty && !state.isLoading else { return .none }
                 state.isLoading = true
+                state.errorMessage = nil
                 let episodeURLs = state.character.episode
                 
                 return .run { send in
@@ -63,10 +66,12 @@ struct CharacterDetailsFeature {
             case let .episodesLoaded(.success(episodes)):
                 state.isLoading = false
                 state.episodes = episodes
+                state.errorMessage = nil
                 return .none
                 
-            case .episodesLoaded(.failure):
+            case let .episodesLoaded(.failure(error)):
                 state.isLoading = false
+                state.errorMessage = error.localizedDescription
                 return .none
                 
             case let .selectEpisode(episode):
@@ -75,6 +80,9 @@ struct CharacterDetailsFeature {
                 
             case .destination:
                 return .none
+
+            case .retry:
+                return .send(.onAppear)
             }
         }
         .ifLet(\.$destination, action: \.destination) {
