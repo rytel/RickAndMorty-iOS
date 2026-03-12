@@ -32,6 +32,10 @@ extension APIClient: DependencyKey {
             }
         }
     )
+    static let testValue = Self(
+        characters: { [] },
+        episodes: { _ in [] }
+    )
 }
 
 extension DependencyValues {
@@ -44,7 +48,8 @@ extension DependencyValues {
 // MARK: - Generic Helper
 private func request<T: Decodable>(_ url: URL) async throws -> T {
     @Dependency(\.jsonDecoder) var decoder
-    let (data, response) = try await URLSession.shared.data(from: url)
+    @Dependency(\.urlSession) var urlSession
+    let (data, response) = try await urlSession.data(from: url)
     
     if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
         throw URLError(.badServerResponse)
