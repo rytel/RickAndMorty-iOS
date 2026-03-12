@@ -15,7 +15,7 @@ extension URLSession: DependencyKey {
 }
 
 extension DependencyValues {
-    var urlSession: URLSession {
+    var rickAndMortyUrlSession: URLSession {
         get { self[URLSession.self] }
         set { self[URLSession.self] = newValue }
     }

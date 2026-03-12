@@ -48,7 +48,7 @@ extension DependencyValues {
 // MARK: - Generic Helper
 private func request<T: Decodable>(_ url: URL) async throws -> T {
     @Dependency(\.jsonDecoder) var decoder
-    @Dependency(\.urlSession) var urlSession
+    @Dependency(\.rickAndMortyUrlSession) var urlSession
     let (data, response) = try await urlSession.data(from: url)
     
     if let httpResponse = response as? HTTPURLResponse, !(200...299).contains(httpResponse.statusCode) {
