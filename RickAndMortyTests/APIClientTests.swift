@@ -122,6 +122,44 @@ class APIClientTests {
             #expect(episodes == [mockEpisode])
         }
     }
+
+    @Test
+    func testURLCaching() async throws {
+        let mockEpisode = Episode(
+            id: 1,
+            name: "Pilot",
+            air_date: "December 2, 2013",
+            episode: "S01E01",
+            characters: []
+        )
+        
+        let data = try JSONEncoder().encode(mockEpisode)
+        let url = URL(string: "https://rickandmortyapi.com/api/episode/1")!
+        let response = HTTPURLResponse(
+            url: url,
+            statusCode: 200,
+            httpVersion: nil,
+            headerFields: ["Cache-Control": "max-age=3600"]
+        )!
+        
+        let cache = URLCache(memoryCapacity: 10 * 1024 * 1024, diskCapacity: 10 * 1024 * 1024, diskPath: nil)
+        let cachedResponse = CachedURLResponse(response: response, data: data)
+        cache.storeCachedResponse(cachedResponse, for: URLRequest(url: url))
+        
+        let config = URLSessionConfiguration.default
+        config.urlCache = cache
+        config.requestCachePolicy = .returnCacheDataElseLoad
+        let session = URLSession(configuration: config)
+        
+        try await withDependencies {
+            $0.rickAndMortyUrlSession = session
+            $0.jsonDecoder = JSONDecoder()
+        } operation: {
+            let apiClient = APIClient.liveValue
+            let episodes = try await apiClient.episodes([url.absoluteString])
+            #expect(episodes == [mockEpisode])
+        }
+    }
 }
 
 // MARK: - MockURLProtocol

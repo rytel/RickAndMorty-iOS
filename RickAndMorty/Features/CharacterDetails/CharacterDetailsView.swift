@@ -41,6 +41,7 @@ struct CharacterDetailsView: View {
         } else if let errorMessage = store.errorMessage {
             ErrorSection(message: errorMessage, onRetry: { store.send(.retry) })
         } else if !store.episodes.isEmpty {
+            
             EpisodesSection(
                 episodes: store.episodes,
                 onSelect: { store.send(.selectEpisode($0)) }
@@ -68,7 +69,7 @@ private struct CharacterHeaderView: View {
     let character: Character
     
     var body: some View {
-        AsyncImage(url: URL(string: character.image)) { image in
+        CachedAsyncImage(url: URL(string: character.image)) { image in
             image.resizable()
                 .aspectRatio(contentMode: .fit)
                 .cornerRadius(12)

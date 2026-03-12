@@ -12,7 +12,7 @@ struct CharacterRow: View {
     
     var body: some View {
         HStack(spacing: 16) {
-            AsyncImage(url: URL(string: character.image)) { image in
+            CachedAsyncImage(url: URL(string: character.image)) { image in
                 image.resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 60, height: 60)
