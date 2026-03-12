@@ -17,39 +17,45 @@ struct CharacterDetailsView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     CharacterHeaderView(character: store.character)
                     CharacterInfoSection(character: store.character)
-                    
-                    if store.isLoading {
-                        ProgressView("Loading episodes...")
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                    } else if !store.episodes.isEmpty {
-                        EpisodesSection(
-                            episodes: store.episodes,
-                            onSelect: { store.send(.selectEpisode($0)) }
-                        )
-                    }
+                    episodesSection
                 }
                 .padding()
             }
             .navigationTitle(store.character.name)
             .navigationBarTitleDisplayMode(.inline)
-            .onAppear {
-                store.send(.onAppear)
-            }
+            .onAppear { store.send(.onAppear) }
             .sheet(
                 item: $store.scope(state: \.destination?.episodeDetails, action: \.destination.episodeDetails)
             ) { episodeStore in
-                NavigationView {
-                    EpisodeDetailsView(store: episodeStore)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarTrailing) {
-                                Button("Done") {
-                                    store.send(.destination(.dismiss))
-                                }
-                            }
-                        }
-                }
+                episodeDetailsSheet(for: episodeStore)
             }
+        }
+    }
+    
+    @ViewBuilder
+    private var episodesSection: some View {
+        if store.isLoading {
+            ProgressView("Loading episodes...")
+                .frame(maxWidth: .infinity)
+                .padding()
+        } else if !store.episodes.isEmpty {
+            EpisodesSection(
+                episodes: store.episodes,
+                onSelect: { store.send(.selectEpisode($0)) }
+            )
+        }
+    }
+    
+    private func episodeDetailsSheet(for store: StoreOf<EpisodeDetailsFeature>) -> some View {
+        NavigationView {
+            EpisodeDetailsView(store: store)
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Button("Done") {
+                            self.store.send(.destination(.dismiss))
+                        }
+                    }
+                }
         }
     }
 }
@@ -83,7 +89,7 @@ private struct CharacterInfoSection: View {
                 .fontWeight(.bold)
             
             VStack(alignment: .leading, spacing: 8) {
-                InfoRow(label: "Status", value: character.status, valueColor: character.status == "Alive" ? .green : (character.status == "Dead" ? .red : .primary))
+                InfoRow(label: "Status", value: character.status, valueColor: statusColor)
                 InfoRow(label: "Gender", value: character.gender)
                 InfoRow(label: "Origin", value: character.origin.name)
                 InfoRow(label: "Location", value: character.location.name)
@@ -91,6 +97,14 @@ private struct CharacterInfoSection: View {
             .padding()
             .background(Color.gray.opacity(0.1))
             .cornerRadius(12)
+        }
+    }
+    
+    private var statusColor: Color {
+        switch character.status.lowercased() {
+        case "alive": return .green
+        case "dead": return .red
+        default: return .primary
         }
     }
 }
@@ -137,12 +151,10 @@ private struct EpisodeRow: View {
     let episode: Episode
     
     var body: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                Text("Episode \(episode.id)")
-                    .font(.headline)
-                Spacer()
-            }
+        HStack {
+            Text("Episode \(episode.id)")
+                .font(.headline)
+            Spacer()
         }
         .frame(maxWidth: .infinity)
         .padding()
