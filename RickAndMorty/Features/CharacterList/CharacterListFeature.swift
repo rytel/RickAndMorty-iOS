@@ -43,6 +43,8 @@ struct CharacterListFeature {
         }
     }
     
+    @Dependency(\.apiClient) var apiClient
+    
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
@@ -60,10 +62,8 @@ struct CharacterListFeature {
                 state.isShowingInstructions = false
                 return .run { send in
                     do {
-                        let url = try URLBuilder().allCharacters()
-                        let (data, _) = try await URLSession.shared.data(from: url)
-                        let response = try JSONDecoder().decode(PaginatedResponse<Character>.self, from: data)
-                        await send(.charactersLoaded(.success(response.results)))
+                        let characters = try await apiClient.characters()
+                        await send(.charactersLoaded(.success(characters)))
                     } catch {
                         await send(.charactersLoaded(.failure(error)))
                     }

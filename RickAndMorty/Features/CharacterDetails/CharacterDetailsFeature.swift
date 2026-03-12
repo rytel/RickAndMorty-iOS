@@ -41,6 +41,8 @@ struct CharacterDetailsFeature {
         }
     }
     
+    @Dependency(\.apiClient) var apiClient
+    
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
@@ -51,22 +53,8 @@ struct CharacterDetailsFeature {
                 
                 return .run { send in
                     do {
-                        var loadedEpisodes: [Episode] = []
-                        try await withThrowingTaskGroup(of: Episode.self) { group in
-                            for urlString in episodeURLs {
-                                if let url = URL(string: urlString) {
-                                    group.addTask {
-                                        let (data, _) = try await URLSession.shared.data(from: url)
-                                        return try JSONDecoder().decode(Episode.self, from: data)
-                                    }
-                                }
-                            }
-                            for try await episode in group {
-                                loadedEpisodes.append(episode)
-                            }
-                        }
-                        loadedEpisodes.sort { $0.id < $1.id }
-                        await send(.episodesLoaded(.success(loadedEpisodes)))
+                        let episodes = try await apiClient.episodes(episodeURLs)
+                        await send(.episodesLoaded(.success(episodes)))
                     } catch {
                         await send(.episodesLoaded(.failure(error)))
                     }
