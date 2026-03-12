@@ -14,6 +14,7 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
     private let placeholder: () -> Placeholder
     
     @State private var image: UIImage?
+    @State private var loadingTask: Task<Void, Never>?
     
     @Dependency(\.imageClient) var imageClient
     
@@ -36,6 +37,10 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
                     .onAppear {
                         loadImage()
                     }
+                    .onDisappear {
+                        loadingTask?.cancel()
+                        loadingTask = nil
+                    }
             }
         }
     }
@@ -43,14 +48,20 @@ struct CachedAsyncImage<Content: View, Placeholder: View>: View {
     private func loadImage() {
         guard let url = url else { return }
         
-        Task {
+        loadingTask?.cancel()
+        loadingTask = Task {
             do {
+                try await Task.sleep(nanoseconds: 300_000_000)
+                
                 let fetchedImage = try await imageClient.image(url)
-                await MainActor.run {
-                    self.image = fetchedImage
+                
+                if !Task.isCancelled {
+                    await MainActor.run {
+                        self.image = fetchedImage
+                    }
                 }
             } catch {
-                // Handle error if needed, for now keep placeholder
+                // Task was cancelled or network error
             }
         }
     }
