@@ -15,6 +15,7 @@ struct CharacterListFeature {
         var isShowingInstructions: Bool = true
         var characters: [Character] = []
         var isLoading: Bool = false
+        var nextPageURL: URL?
         @Presents var destination: Destination.State?
     }
     
@@ -22,7 +23,8 @@ struct CharacterListFeature {
         case hideTip
         case cleanList
         case loadCharacters
-        case charactersLoaded(Result<[Character], Error>)
+        case loadNextPage
+        case charactersLoaded(Result<PaginatedResponse<Character>, Error>)
         case selectCharacter(Character)
         case destination(PresentationAction<Destination.Action>)
     }
@@ -55,23 +57,38 @@ struct CharacterListFeature {
             case .cleanList:
                 state.isShowingInstructions = true
                 state.characters = []
+                state.nextPageURL = nil
                 return .none
                 
             case .loadCharacters:
                 state.isLoading = true
                 state.isShowingInstructions = false
+                state.nextPageURL = nil
                 return .run { send in
                     do {
-                        let characters = try await apiClient.characters()
-                        await send(.charactersLoaded(.success(characters)))
+                        let response = try await apiClient.characters(nil)
+                        await send(.charactersLoaded(.success(response)))
                     } catch {
                         await send(.charactersLoaded(.failure(error)))
                     }
                 }
                 
-            case let .charactersLoaded(.success(characters)):
+            case .loadNextPage:
+                guard !state.isLoading, let nextURL = state.nextPageURL else { return .none }
+                state.isLoading = true
+                return .run { send in
+                    do {
+                        let response = try await apiClient.characters(nextURL)
+                        await send(.charactersLoaded(.success(response)))
+                    } catch {
+                        await send(.charactersLoaded(.failure(error)))
+                    }
+                }
+                
+            case let .charactersLoaded(.success(response)):
                 state.isLoading = false
-                state.characters = characters
+                state.characters.append(contentsOf: response.results)
+                state.nextPageURL = response.info.next
                 return .none
                 
             case .charactersLoaded(.failure):

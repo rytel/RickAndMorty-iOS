@@ -10,10 +10,9 @@ import ComposableArchitecture
 
 extension APIClient: DependencyKey {
     static let liveValue = Self(
-        characters: {
-            let url = try URLBuilder().allCharacters()
-            let response: PaginatedResponse<Character> = try await request(url)
-            return response.results
+        characters: { url in
+            let fetchUrl = try url ?? URLBuilder().allCharacters()
+            return try await request(fetchUrl)
         },
         episodes: { urls in
             try await withThrowingTaskGroup(of: Episode.self) { group in
@@ -33,7 +32,12 @@ extension APIClient: DependencyKey {
         }
     )
     static let testValue = Self(
-        characters: { [] },
+        characters: { _ in
+            PaginatedResponse(
+                info: .init(count: 0, pages: 0, next: nil, prev: nil),
+                results: []
+            )
+        },
         episodes: { _ in [] }
     )
 }

@@ -33,8 +33,10 @@ struct RootView: View {
     let store: StoreOf<RootFeature>
     
     var body: some View {
-        CharacterListView(
-            store: store.scope(state: \.characterList, action: \.characterList)
-        )
+        WithPerceptionTracking {
+            CharacterListView(
+                store: store.scope(state: \.characterList, action: \.characterList)
+            )
+        }
     }
 }

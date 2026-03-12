@@ -55,8 +55,8 @@ class APIClientTests {
             $0.jsonDecoder = JSONDecoder()
         } operation: {
             let apiClient = APIClient.liveValue
-            let characters = try await apiClient.characters()
-            #expect(characters == mockCharacters)
+            let charactersResponse = try await apiClient.characters(nil)
+            #expect(charactersResponse.results == mockCharacters)
         }
     }
     
@@ -85,7 +85,7 @@ class APIClientTests {
         } operation: {
             let apiClient = APIClient.liveValue
             await #expect(throws: Error.self) {
-                try await apiClient.characters()
+                try await apiClient.characters(nil)
             }
         }
     }

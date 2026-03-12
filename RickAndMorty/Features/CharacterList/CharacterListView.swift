@@ -15,14 +15,16 @@ struct CharacterListView: View {
         WithPerceptionTracking {
             NavigationView {
                 VStack {
-                    if store.isLoading {
+                    if store.isLoading && store.characters.isEmpty {
                         ProgressView()
                     } else if store.isShowingInstructions {
                         InitialStateView(onDownload: { store.send(.loadCharacters) })
                     } else {
                         CharacterList(
                             characters: store.characters,
-                            onSelect: { store.send(.selectCharacter($0)) }
+                            isLoading: store.isLoading,
+                            onSelect: { store.send(.selectCharacter($0)) },
+                            onScrolledAtEnd: { store.send(.loadNextPage) }
                         )
                     }
                 }

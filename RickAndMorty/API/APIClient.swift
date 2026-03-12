@@ -9,6 +9,6 @@ import Foundation
 import ComposableArchitecture
 
 struct APIClient {
-    var characters: () async throws -> [Character]
+    var characters: (URL?) async throws -> PaginatedResponse<Character>
     var episodes: ([String]) async throws -> [Episode]
 }
