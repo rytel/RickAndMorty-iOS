@@ -76,9 +76,12 @@ class APIClientTests {
             return (response, Data())
         }
         
+        let emptyCache = URLCache(memoryCapacity: 0, diskCapacity: 0, diskPath: nil)
+        
         await withDependencies {
             $0.rickAndMortyUrlSession = session
             $0.jsonDecoder = JSONDecoder()
+            $0.urlCache = emptyCache
         } operation: {
             let apiClient = APIClient.liveValue
             await #expect(throws: Error.self) {

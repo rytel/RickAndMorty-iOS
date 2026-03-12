@@ -15,7 +15,6 @@ struct CharacterListFeature {
         var isShowingInstructions: Bool = true
         var characters: [Character] = []
         var isLoading: Bool = false
-        var errorMessage: String?
         @Presents var destination: Destination.State?
     }
     
@@ -26,7 +25,6 @@ struct CharacterListFeature {
         case charactersLoaded(Result<[Character], Error>)
         case selectCharacter(Character)
         case destination(PresentationAction<Destination.Action>)
-        case retry
     }
     
     @Reducer
@@ -57,13 +55,11 @@ struct CharacterListFeature {
             case .cleanList:
                 state.isShowingInstructions = true
                 state.characters = []
-                state.errorMessage = nil
                 return .none
                 
             case .loadCharacters:
                 state.isLoading = true
                 state.isShowingInstructions = false
-                state.errorMessage = nil
                 return .run { send in
                     do {
                         let characters = try await apiClient.characters()
@@ -76,12 +72,10 @@ struct CharacterListFeature {
             case let .charactersLoaded(.success(characters)):
                 state.isLoading = false
                 state.characters = characters
-                state.errorMessage = nil
                 return .none
                 
-            case let .charactersLoaded(.failure(error)):
+            case .charactersLoaded(.failure):
                 state.isLoading = false
-                state.errorMessage = error.localizedDescription
                 return .none
                 
             case let .selectCharacter(character):
@@ -94,9 +88,6 @@ struct CharacterListFeature {
                 
             case .destination:
                 return .none
-
-            case .retry:
-                return .send(.loadCharacters)
             }
         }
         .ifLet(\.$destination, action: \.destination) {

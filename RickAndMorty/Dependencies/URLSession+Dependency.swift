@@ -13,6 +13,8 @@ extension URLSession: DependencyKey {
         let config = URLSessionConfiguration.default
         config.urlCache = .rickAndMorty
         config.requestCachePolicy = .useProtocolCachePolicy
+        config.waitsForConnectivity = false
+        config.timeoutIntervalForRequest = 15
         return URLSession(configuration: config)
     }
 }
@@ -25,8 +27,8 @@ extension URLCache: DependencyKey {
 
 extension URLCache {
     static let rickAndMorty = URLCache(
-        memoryCapacity: 100 * 1024 * 1024, // 100 MB
-        diskCapacity: 1000 * 1024 * 1024,  // 1000 MB
+        memoryCapacity: 100 * 1024 * 1024,  // Increased to 100 MB
+        diskCapacity: 1000 * 1024 * 1024,   // Increased to 1000 MB
         diskPath: "rick_and_morty_cache"
     )
 }

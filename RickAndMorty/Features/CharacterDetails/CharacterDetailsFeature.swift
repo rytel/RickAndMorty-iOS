@@ -15,7 +15,7 @@ struct CharacterDetailsFeature {
         let character: Character
         var episodeIDs: [Int] = []
         var isLoading: Bool = false
-        var errorMessage: String?
+        var lastSelectedEpisodeID: Int?
         @Presents var destination: Destination.State?
     }
     
@@ -24,7 +24,6 @@ struct CharacterDetailsFeature {
         case selectEpisode(Int)
         case episodeLoaded(Result<Episode, Error>)
         case destination(PresentationAction<Destination.Action>)
-        case retry
     }
     
     @Reducer
@@ -56,7 +55,7 @@ struct CharacterDetailsFeature {
                 
             case let .selectEpisode(id):
                 state.isLoading = true
-                state.errorMessage = nil
+                state.lastSelectedEpisodeID = id
                 let url = "https://rickandmortyapi.com/api/episode/\(id)"
                 
                 return .run { send in
@@ -75,16 +74,11 @@ struct CharacterDetailsFeature {
                 state.destination = .episodeDetails(EpisodeDetailsFeature.State(episode: episode))
                 return .none
                 
-            case let .episodeLoaded(.failure(error)):
+            case .episodeLoaded(.failure):
                 state.isLoading = false
-                state.errorMessage = error.localizedDescription
                 return .none
                 
             case .destination:
-                return .none
-
-            case .retry:
-                state.errorMessage = nil
                 return .none
             }
         }

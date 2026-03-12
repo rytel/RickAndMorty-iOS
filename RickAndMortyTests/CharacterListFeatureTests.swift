@@ -34,7 +34,7 @@ struct CharacterListFeatureTests {
             $0.apiClient.characters = { mockCharacters }
         }
         
-        await store.send(.loadCharacters) {
+        await store.send(CharacterListFeature.Action.loadCharacters) {
             $0.isLoading = true
             $0.isShowingInstructions = false
         }
@@ -42,51 +42,6 @@ struct CharacterListFeatureTests {
         await store.receive(\.charactersLoaded.success) {
             $0.isLoading = false
             $0.characters = mockCharacters
-        }
-    }
-    
-    @Test
-    func testLoadCharactersFailure() async {
-        struct MockError: Error, LocalizedError, Equatable {
-            var errorDescription: String? { "Network error" }
-        }
-        
-        let store = TestStore(initialState: CharacterListFeature.State()) {
-            CharacterListFeature()
-        } withDependencies: {
-            $0.apiClient.characters = { throw MockError() }
-        }
-        
-        await store.send(.loadCharacters) {
-            $0.isLoading = true
-            $0.isShowingInstructions = false
-        }
-        
-        await store.receive(\.charactersLoaded.failure) {
-            $0.isLoading = false
-            $0.errorMessage = "Network error"
-        }
-    }
-    
-    @Test
-    func testRetry() async {
-        let store = TestStore(initialState: CharacterListFeature.State(errorMessage: "Initial error")) {
-            CharacterListFeature()
-        } withDependencies: {
-            $0.apiClient.characters = { [] }
-        }
-        
-        await store.send(.retry)
-        
-        await store.receive(\.loadCharacters) {
-            $0.isLoading = true
-            $0.errorMessage = nil
-            $0.isShowingInstructions = false
-        }
-        
-        await store.receive(\.charactersLoaded.success) {
-            $0.isLoading = false
-            $0.characters = []
         }
     }
 }

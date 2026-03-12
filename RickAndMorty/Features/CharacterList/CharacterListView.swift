@@ -17,8 +17,6 @@ struct CharacterListView: View {
                 VStack {
                     if store.isLoading {
                         ProgressView()
-                    } else if let errorMessage = store.errorMessage {
-                        ErrorView(message: errorMessage, onRetry: { store.send(.retry) })
                     } else if store.isShowingInstructions {
                         InitialStateView(onDownload: { store.send(.loadCharacters) })
                     } else {

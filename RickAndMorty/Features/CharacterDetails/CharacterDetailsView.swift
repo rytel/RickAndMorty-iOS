@@ -46,14 +46,10 @@ struct CharacterDetailsView: View {
                 }
             }
             
-            if let errorMessage = store.errorMessage {
-                ErrorSection(message: errorMessage, onRetry: { store.send(.retry) })
-            } else {
-                EpisodesSection(
-                    episodeIDs: store.episodeIDs,
-                    onSelect: { store.send(.selectEpisode($0)) }
-                )
-            }
+            EpisodesSection(
+                episodeIDs: store.episodeIDs,
+                onSelect: { store.send(.selectEpisode($0)) }
+            )
         }
     }
     
@@ -167,32 +163,6 @@ private struct EpisodeRow: View {
         .padding()
         .background(Color.gray.opacity(0.1))
         .cornerRadius(10)
-    }
-}
-
-private struct ErrorSection: View {
-    let message: String
-    let onRetry: () -> Void
-    
-    var body: some View {
-        VStack(spacing: 16) {
-            Text("Failed to load episode details")
-                .font(.headline)
-            
-            Text(message)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-            
-            Button(action: onRetry) {
-                Label("Clear Error", systemImage: "xmark.circle")
-            }
-            .buttonStyle(.bordered)
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .background(Color.red.opacity(0.05))
-        .cornerRadius(12)
     }
 }
 
