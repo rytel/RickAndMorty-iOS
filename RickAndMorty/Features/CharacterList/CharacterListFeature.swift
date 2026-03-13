@@ -7,6 +7,7 @@
 
 import ComposableArchitecture
 import Foundation
+import SwiftUI
 
 @Reducer
 struct CharacterListFeature {
@@ -17,6 +18,7 @@ struct CharacterListFeature {
         var isLoading: Bool = false
         var nextPageURL: URL?
         @Presents var destination: Destination.State?
+        @Presents var alert: AlertState<Action.Alert>?
     }
     
     enum Action {
@@ -27,6 +29,12 @@ struct CharacterListFeature {
         case charactersLoaded(Result<PaginatedResponse<Character>, Error>)
         case selectCharacter(Character)
         case destination(PresentationAction<Destination.Action>)
+        case alert(PresentationAction<Alert>)
+        
+        enum Alert: Equatable {
+            case retryInitial
+            case retryNextPage
+        }
     }
     
     @Reducer
@@ -91,12 +99,36 @@ struct CharacterListFeature {
                 state.nextPageURL = response.info.next
                 return .none
                 
-            case .charactersLoaded(.failure):
+            case let .charactersLoaded(.failure(error)):
                 state.isLoading = false
+                let networkError = (error as? NetworkError) ?? .other(error)
+                let retryAction: Action.Alert = state.characters.isEmpty ? .retryInitial : .retryNextPage
+                
+                state.alert = AlertState {
+                    TextState(networkError.title)
+                } actions: {
+                    ButtonState(action: .send(retryAction)) {
+                        TextState("Retry")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("OK")
+                    }
+                } message: {
+                    TextState(networkError.message)
+                }
                 return .none
                 
             case let .selectCharacter(character):
                 state.destination = .details(CharacterDetailsFeature.State(character: character))
+                return .none
+                
+            case .alert(.presented(.retryInitial)):
+                return .send(.loadCharacters)
+                
+            case .alert(.presented(.retryNextPage)):
+                return .send(.loadNextPage)
+                
+            case .alert:
                 return .none
                 
             case .destination(.dismiss):
@@ -110,5 +142,6 @@ struct CharacterListFeature {
         .ifLet(\.$destination, action: \.destination) {
             Destination()
         }
+        .ifLet(\.$alert, action: \.alert)
     }
 }

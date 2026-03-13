@@ -38,6 +38,9 @@ struct CharacterListView: View {
                 }
                 .background(navigationLink)
             }
+            .alert(
+                store: store.scope(state: \.$alert, action: \.alert)
+            )
         }
     }
     
