@@ -8,6 +8,7 @@
 import ComposableArchitecture
 import Foundation
 import Testing
+import OSLog
 @testable import RickAndMorty
 
 @MainActor
@@ -51,8 +52,9 @@ class APIClientTests {
         }
         
         try await withDependencies {
-            $0.rickAndMortyUrlSession = session
+            $0.networkHelper = NetworkHelper(urlSession: session, logger: .init(subsystem: "test", category: "test"))
             $0.jsonDecoder = JSONDecoder()
+            $0.urlBuilder = URLBuilder()
         } operation: {
             let apiClient = APIClient.liveValue
             let charactersResponse = try await apiClient.characters(nil)
@@ -79,9 +81,9 @@ class APIClientTests {
         let emptyCache = URLCache(memoryCapacity: 0, diskCapacity: 0, diskPath: nil)
         
         await withDependencies {
-            $0.rickAndMortyUrlSession = session
+            $0.networkHelper = NetworkHelper(urlSession: session, logger: .init(subsystem: "test", category: "test"))
             $0.jsonDecoder = JSONDecoder()
-            $0.urlCache = emptyCache
+            $0.urlBuilder = URLBuilder()
         } operation: {
             let apiClient = APIClient.liveValue
             await #expect(throws: Error.self) {
@@ -117,8 +119,9 @@ class APIClientTests {
         }
         
         try await withDependencies {
-            $0.rickAndMortyUrlSession = session
+            $0.networkHelper = NetworkHelper(urlSession: session, logger: .init(subsystem: "test", category: "test"))
             $0.jsonDecoder = JSONDecoder()
+            $0.urlBuilder = URLBuilder()
         } operation: {
             let apiClient = APIClient.liveValue
             let episodes = try await apiClient.episodes(["https://rickandmortyapi.com/api/episode/1"])
@@ -155,8 +158,9 @@ class APIClientTests {
         let session = URLSession(configuration: config)
         
         try await withDependencies {
-            $0.rickAndMortyUrlSession = session
+            $0.networkHelper = NetworkHelper(urlSession: session, logger: .init(subsystem: "test", category: "test"))
             $0.jsonDecoder = JSONDecoder()
+            $0.urlBuilder = URLBuilder()
         } operation: {
             let apiClient = APIClient.liveValue
             let episodes = try await apiClient.episodes([url.absoluteString])

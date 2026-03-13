@@ -5,6 +5,8 @@
 //  Created by Rafal Rytel on 11/03/2026.
 //
 
+import Foundation
+
 struct Character: Codable, Equatable {
     let id: Int
     let name: String
@@ -14,6 +16,12 @@ struct Character: Codable, Equatable {
     let location: Location
     let image: String
     let episode: [String]
+    
+    var episodeIDs: [Int] {
+        episode.compactMap { urlString in
+            URL(string: urlString)?.lastPathComponent
+        }.compactMap { Int($0) }
+    }
 }
 
 struct Origin: Codable, Equatable {

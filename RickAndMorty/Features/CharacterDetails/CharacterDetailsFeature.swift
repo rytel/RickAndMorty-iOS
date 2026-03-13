@@ -43,24 +43,23 @@ struct CharacterDetailsFeature {
     }
     
     @Dependency(\.apiClient) var apiClient
+    @Dependency(\.urlBuilder) var urlBuilder
     
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
             case .onAppear:
-                state.episodeIDs = state.character.episode.compactMap { urlString in
-                    URL(string: urlString)?.lastPathComponent
-                }.compactMap { Int($0) }
+                state.episodeIDs = state.character.episodeIDs
                 return .none
                 
             case let .selectEpisode(id):
                 state.isLoading = true
                 state.lastSelectedEpisodeID = id
-                let url = "https://rickandmortyapi.com/api/episode/\(id)"
                 
-                return .run { send in
+                return .run { [urlBuilder] send in
                     do {
-                        let episodes = try await apiClient.episodes([url])
+                        let url = try urlBuilder.episode(id: id)
+                        let episodes = try await apiClient.episodes([url.absoluteString])
                         if let episode = episodes.first {
                             await send(.episodeLoaded(.success(episode)))
                         }

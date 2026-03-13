@@ -25,7 +25,7 @@ struct CharacterDetailsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .onAppear { store.send(.onAppear) }
             .sheet(
-                item: $store.scope(state: \.destination?.episodeDetails, action: \.destination.episodeDetails)
+                store: store.scope(state: \.$destination.episodeDetails, action: \.destination.episodeDetails)
             ) { episodeStore in
                 episodeDetailsSheet(for: episodeStore)
             }

@@ -28,11 +28,7 @@ struct URLBuilder {
     }
     
     private func build(_ endpointPath: EndpointPath, _ suffix: String? = nil) throws -> URL {
-        let path = String(format: base
-                          + (suffix != nil ? "/" : "")
-                          + endpointPath.rawValue
-                          + (suffix ?? "")
-        )
+        let path = base + endpointPath.rawValue + (suffix ?? "")
         
         guard let url = URL(string: path) else {
             throw URLBuilderError.invalidURL
@@ -50,7 +46,7 @@ struct URLBuilder {
     }
     
     func character(id: Int) throws -> URL {
-        try build(.character, String(id))
+        try build(.character, "/\(id)")
     }
     
     //MARK: - Episode
@@ -63,6 +59,6 @@ struct URLBuilder {
     }
     
     func episode(id: Int) throws -> URL {
-        try build(.episode, String(id))
+        try build(.episode, "/\(id)")
     }
 }
