@@ -128,6 +128,9 @@ struct CharacterListFeature {
             case .alert(.presented(.retryNextPage)):
                 return .send(.loadNextPage)
                 
+            case .alert(.dismiss):
+                return .none
+                
             case .alert:
                 return .none
                 
