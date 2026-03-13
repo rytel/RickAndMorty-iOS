@@ -23,13 +23,9 @@ extension ImageClient: DependencyKey {
                 return cached
             }
             
-            logger.debug("🚀 Requesting image URL: \(url.absoluteString, privacy: .public)")
             @Dependency(\.rickAndMortyUrlSession) var urlSession
-            let (data, response) = try await urlSession.data(from: url)
-            
-            if let httpResponse = response as? HTTPURLResponse {
-                logger.info("✅ Received image (\(httpResponse.statusCode)) for URL: \(url.absoluteString, privacy: .public). Data size: \(data.count) bytes.")
-            }
+            let helper = NetworkHelper(urlSession: urlSession, logger: logger)
+            let data = try await helper.performRequest(url)
             
             guard let image = UIImage(data: data) else {
                 logger.error("❌ Could not decode image data for URL: \(url.absoluteString, privacy: .public)")
