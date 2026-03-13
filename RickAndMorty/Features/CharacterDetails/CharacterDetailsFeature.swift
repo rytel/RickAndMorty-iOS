@@ -7,25 +7,33 @@
 
 import ComposableArchitecture
 import Foundation
+import SwiftUI
 
 @Reducer
 struct CharacterDetailsFeature {
     @ObservableState
     struct State: Equatable {
         let character: Character
-        var episodeIDs: [Int] = []
+        var episodes: [Episode] = []
         var isLoading: Bool = false
+        var episodeIDs: [Int] = []
         var lastSelectedEpisodeID: Int?
         @Presents var destination: Destination.State?
+        @Presents var alert: AlertState<Action.Alert>?
     }
-    
+
     enum Action {
         case onAppear
         case selectEpisode(Int)
         case episodeLoaded(Result<Episode, Error>)
         case destination(PresentationAction<Destination.Action>)
+        case alert(PresentationAction<Alert>)
+
+        enum Alert: Equatable {
+            case retry(Int)
+        }
     }
-    
+
     @Reducer
     struct Destination {
         @ObservableState
@@ -67,22 +75,47 @@ struct CharacterDetailsFeature {
                         await send(.episodeLoaded(.failure(error)))
                     }
                 }
-                
-            case let .episodeLoaded(.success(episode)):
-                state.isLoading = false
-                state.destination = .episodeDetails(EpisodeDetailsFeature.State(episode: episode))
-                return .none
-                
-            case .episodeLoaded(.failure):
-                state.isLoading = false
-                return .none
-                
-            case .destination:
-                return .none
-            }
-        }
-        .ifLet(\.$destination, action: \.destination) {
-            Destination()
-        }
-    }
-}
+                case let .episodeLoaded(.success(episode)):
+                    state.isLoading = false
+                    state.episodes.append(episode)
+                    state.destination = .episodeDetails(EpisodeDetailsFeature.State(episode: episode))
+                    return .none
+
+                case let .episodeLoaded(.failure(error)):
+                    state.isLoading = false
+                    let networkError = (error as? NetworkError) ?? .other(error)
+                    let retryID = state.lastSelectedEpisodeID
+
+                    state.alert = AlertState {
+                        TextState(networkError.title)
+                    } actions: {
+                        if let id = retryID {
+                            ButtonState(action: .retry(id)) {
+                                TextState("Retry")
+                            }
+                        }
+                        ButtonState(role: .cancel) {
+                            TextState("OK")
+                        }
+                    } message: {
+                        TextState(networkError.message)
+                    }
+                    return .none
+
+                case let .alert(.presented(.retry(id))):
+                    return .send(.selectEpisode(id))
+
+                case .alert:
+                    return .none
+
+                case .destination:
+                    return .none
+                }
+                }
+                .ifLet(\.$destination, action: \.destination) {
+                Destination()
+                }
+                .ifLet(\.$alert, action: \.alert)
+                }
+                }
+

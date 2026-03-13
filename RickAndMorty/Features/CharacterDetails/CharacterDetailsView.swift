@@ -29,6 +29,9 @@ struct CharacterDetailsView: View {
             ) { episodeStore in
                 episodeDetailsSheet(for: episodeStore)
             }
+            .alert(
+                store: store.scope(state: \.$alert, action: \.alert)
+            )
         }
     }
     
