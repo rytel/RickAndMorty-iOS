@@ -36,26 +36,8 @@ struct URLBuilder {
         return url
     }
     
-    //MARK: - Character
     func allCharacters() throws -> URL {
         try build(.character)
-    }
-    
-    func characters(page: Int) throws -> URL {
-        try build(.character, "/?page=\(page)")
-    }
-    
-    func character(id: Int) throws -> URL {
-        try build(.character, "/\(id)")
-    }
-    
-    //MARK: - Episode
-    func allEpisodes() throws -> URL {
-        try build(.episode)
-    }
-    
-    func episodes(page: Int) throws -> URL {
-        try build(.episode, "/?page=\(page)")
     }
     
     func episode(id: Int) throws -> URL {
